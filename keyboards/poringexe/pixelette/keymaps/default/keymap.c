@@ -4,23 +4,25 @@
 #include <qp.h>
 #include QMK_KEYBOARD_H
 #include "techfont.qff.h"
-#include "font/unlearned11.qff.h"
-#include "font/unlearned90.qff.h"
-#include "font/mister95.qff.h"
-#include "font/pdart95.qff.h"
+#include "font/unlearned42.qff.h"
+#include "font/minecraft20.qff.h"
+#include "font/origami40.qff.h"
 
 
 static painter_device_t display;
-static painter_font_handle_t font = NULL;
+static painter_font_handle_t font1 = NULL;
+static painter_font_handle_t font2 = NULL;
+static painter_font_handle_t font3 = NULL;
 static const char *text;
 int16_t width;
 uint8_t height;
+uint8_t heightF2;
+int16_t widthL2;
 int vertpos = 0;
 int hortpos = 0;
 int current_wpm = 0;
-int x;
-int y;
 int fonttype;
+led_t    led_usb_state;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT_75_ansi(
@@ -33,6 +35,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     )
 };
 
+#if defined(ENCODER_MAP_ENABLE)
+
+const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
+    [0] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)}
+};
+
+#endif
+
 
 uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     display = qp_st7789_make_spi_device(LCD_WIDTH, LCD_HEIGHT, LCD_CS_PIN, LCD_DC_PIN, LCD_RST_PIN, 16, 3);
@@ -40,7 +50,11 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     qp_power(display, true);
     qp_set_viewport_offsets(display, 35, 0);
 	
-    font = qp_load_font_mem(font_unlearned90);
+    font1 = qp_load_font_mem(font_origami40);
+    font2 = qp_load_font_mem(font_unlearned42);
+    font3 = qp_load_font_mem(font_minecraft20);
+    heightF2 = font2 -> line_height;
+    widthL2 = qp_textwidth(font2, "LAYER 2");
     qp_rect(display, 0, 0, 170, 320, 0, 0, 0, true);
     qp_flush(display);
 	
@@ -50,43 +64,65 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
 void keyboard_post_init_kb(void) {
     debug_enable = true;
     defer_exec(200, deffered_init, NULL);
-}  
-
-led_t    led_usb_state;
-void housekeeping_task_user(void) {
-	led_usb_state = host_keyboard_led_state();
-	if (led_usb_state.caps_lock == true){
-		qp_rect(display, 0, 0, 10, 10, 130, 255, 255, true);
-	}
-	else{
-		qp_rect(display, 0, 0, 10, 10, 0, 255, 255, true);
-	}
-	if (led_usb_state.num_lock == true){
-		qp_rect(display, 15, 0, 25, 10, 130, 255, 255, true);
-	}
-	else{
-		qp_rect(display, 15, 0, 25, 10, 0, 255, 255, true);
-	}
-	if (led_usb_state.scroll_lock == true){
-		qp_rect(display, 30, 0, 40, 10, 130, 255, 255, true);
-	}
-	else{
-		qp_rect(display, 30, 0, 40, 10, 0, 255, 255, true);
-	}
-
-	vertpos = 160 - height/2;
-	hortpos = 85 - width/2;
-	qp_drawtext(display, hortpos, vertpos, font, text);
 }
 
-#if defined(ENCODER_MAP_ENABLE)
+void render_led_status(void)
+{
+    int usb_statex = 6;
+    int cap_y = 65;
+    int num_y = 134;
+    int scroll_y = 202;
+    int status_width = 42;
+    int status_height = 54;
+	led_usb_state = host_keyboard_led_state();
+	if (led_usb_state.caps_lock == true){
+		qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 130, 255, 255, true);
+	}
+	else{
+		qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 0, 255, 255, true);
+	}
+	if (led_usb_state.num_lock == true){
+		qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 130, 255, 255, true);
+	}
+	else{
+		qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 0, 255, 255, true);
+	}
+	if (led_usb_state.scroll_lock == true){
+		qp_rect(display, usb_statex, scroll_y, usb_statex + status_width, scroll_y + status_height, 130, 255, 255, true);
+	}
+	else{
+		qp_rect(display, usb_statex, scroll_y, usb_statex + status_width , scroll_y + status_height , 0, 255, 255, true);
+	}
+}  
 
-const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [0] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)}
-};
+void render_windows_logo(int x, int y)
+{
+    //square top left
+    qp_rect(display, x, y, x+19, y+19, 0, 0, 255, true);
+    //top right square
+    qp_rect(display, x+22, y, x+41, y+19, 0, 0, 255, true);
+    //bottom left square
+    qp_rect(display, x, y+22, x+19, y+41, 0, 0, 255, true);
+    //bottom right square
+    qp_rect(display, x+22, y+22, x+41, y+41, 0, 0, 255, true);
+}
 
-#endif
-
+void housekeeping_task_user(void) {
+	//render separator lines
+	qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
+    qp_rect(display, 54, 55, 56, 266, 0, 0, 255, true);
+    qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
+	render_led_status();
+    vertpos = 26 - heightF2/2;
+    hortpos = 85 - widthL2/2;
+    qp_drawtext(display, hortpos, vertpos, font2, "LAYER 2");
+	vertpos = 160 - height/2;
+	hortpos = 113 - width/2;
+	qp_drawtext(display, hortpos, vertpos, font1, text);
+	render_windows_logo(6, 273);
+	qp_drawtext(display, 54, 273, font3, "WINKEY");
+    qp_drawtext(display, 54, 300, font3, "DISABLED");
+}
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 	switch(keycode) {
@@ -529,12 +565,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         default:
         	break;
     }
-    if(qp_textwidth(font, text) < width)
+    if(qp_textwidth(font1, text) < width)
     {
     	qp_rect(display, hortpos, vertpos, hortpos+width, vertpos+height, 0, 0, 0, true);
 	}
     
-    width = qp_textwidth(font, text);
-	height = font -> line_height;
+    width = qp_textwidth(font1, text);
+	height = font1 -> line_height;
     return true;
 };
