@@ -5,3 +5,4 @@ SRC =  techfont.qff.c \
 	   font/origami40.qff.c \
 	   font/minecraft20.qff.c
 ENCODER_MAP_ENABLE = yes
+# CONSOLE_ENABLE = yes

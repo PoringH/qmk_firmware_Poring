@@ -1,9 +1,9 @@
 // Copyright 2023 QMK
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "print.h"
 #include <qp.h>
 #include QMK_KEYBOARD_H
-#include "techfont.qff.h"
 #include "font/unlearned42.qff.h"
 #include "font/minecraft20.qff.h"
 #include "font/origami40.qff.h"
@@ -13,7 +13,8 @@ static painter_device_t display;
 static painter_font_handle_t font1 = NULL;
 static painter_font_handle_t font2 = NULL;
 static painter_font_handle_t font3 = NULL;
-static const char *text;
+static const char *text = "A";
+static const char *last_text;
 int16_t width;
 uint8_t height;
 uint8_t heightF2;
@@ -22,7 +23,15 @@ int vertpos = 0;
 int hortpos = 0;
 int current_wpm = 0;
 int fonttype;
-led_t    led_usb_state;
+led_t    led_state;
+static led_t    led_last_state; 
+// led_last_state.raw = 0;
+uint8_t last_layer = 0;
+uint8_t current_layer;
+bool gui_state;
+bool gui_last_state;
+bool screen_init;
+// bool screen2;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT_75_ansi(
@@ -31,14 +40,23 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                           KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,          KC_END,
                           KC_CAPS, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,           KC_PGUP,
         KC_F14,  KC_F15,  KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,          KC_RSFT, KC_UP,   KC_PGDN,
-        QK_BOOT, KC_F16,  KC_LCTL, KC_LGUI, KC_LALT,                            KC_SPC,                             KC_RALT, KC_RGUI, KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT
+        QK_BOOT, KC_F16,  KC_LCTL, KC_LGUI, KC_LALT,                            KC_SPC,                             KC_RALT, MO(1),   KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT
+    ),
+    [1] = LAYOUT_75_ansi(
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
+                          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
+                          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
+                          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,          KC_TRNS,
+        KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS,
+        KC_TRNS, NK_TOGG, KC_TRNS, GU_TOGG, KC_TRNS,                            KC_TRNS,                             KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
     )
 };
 
 #if defined(ENCODER_MAP_ENABLE)
 
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [0] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)}
+    [0] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)},
+    [1] = {ENCODER_CCW_CW(KC_TRNS, KC_TRNS), ENCODER_CCW_CW(KC_TRNS, KC_TRNS)}
 };
 
 #endif
@@ -57,6 +75,9 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     widthL2 = qp_textwidth(font2, "LAYER 2");
     qp_rect(display, 0, 0, 170, 320, 0, 0, 0, true);
     qp_flush(display);
+    screen_init = true;
+    width = qp_textwidth(font1, text);
+	height = font1 -> line_height;
 	
     return 0;
 }
@@ -74,25 +95,32 @@ void render_led_status(void)
     int scroll_y = 202;
     int status_width = 42;
     int status_height = 54;
-	led_usb_state = host_keyboard_led_state();
-	if (led_usb_state.caps_lock == true){
-		qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 130, 255, 255, true);
+	led_state = host_keyboard_led_state();
+	if(led_last_state.raw != led_state.raw || screen_init) {
+		led_last_state.raw = led_state.raw;
+		// print("led state change\n");
+        if (led_state.caps_lock == true){
+            qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 130, 255, 255, true);
+        }
+        else{			
+            qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 0, 255, 255, true);
+        }
+        if (led_state.num_lock == true){
+            qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 130, 255, 255, true);
+        }
+        else{
+            qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 0, 255, 255, true);
+        }
+        if (led_state.scroll_lock == true){
+            qp_rect(display, usb_statex, scroll_y, usb_statex + status_width, scroll_y + status_height, 130, 255, 255, true);
+        }
+        else{
+            qp_rect(display, usb_statex, scroll_y, usb_statex + status_width , scroll_y + status_height , 0, 255, 255, true);
 	}
-	else{
-		qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 0, 255, 255, true);
+		
 	}
-	if (led_usb_state.num_lock == true){
-		qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 130, 255, 255, true);
-	}
-	else{
-		qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 0, 255, 255, true);
-	}
-	if (led_usb_state.scroll_lock == true){
-		qp_rect(display, usb_statex, scroll_y, usb_statex + status_width, scroll_y + status_height, 130, 255, 255, true);
-	}
-	else{
-		qp_rect(display, usb_statex, scroll_y, usb_statex + status_width , scroll_y + status_height , 0, 255, 255, true);
-	}
+    
+	
 }  
 
 void render_windows_logo(int x, int y)
@@ -107,25 +135,91 @@ void render_windows_logo(int x, int y)
     qp_rect(display, x+22, y+22, x+41, y+41, 0, 0, 255, true);
 }
 
-void housekeeping_task_user(void) {
-	//render separator lines
-	qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
-    qp_rect(display, 54, 55, 56, 266, 0, 0, 255, true);
-    qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
+void render_screen1(void) {
+    //render template
+    if(screen_init) {
+        qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
+        qp_rect(display, 55, 55, 57, 266, 0, 0, 255, true);
+        qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
+        render_windows_logo(6, 273);
+        qp_drawtext(display, 54, 273, font3, "WINKEY");
+    }
+	
+
 	render_led_status();
-    vertpos = 26 - heightF2/2;
-    hortpos = 85 - widthL2/2;
-    qp_drawtext(display, hortpos, vertpos, font2, "LAYER 2");
-	vertpos = 160 - height/2;
-	hortpos = 113 - width/2;
-	qp_drawtext(display, hortpos, vertpos, font1, text);
-	render_windows_logo(6, 273);
-	qp_drawtext(display, 54, 273, font3, "WINKEY");
-    qp_drawtext(display, 54, 300, font3, "DISABLED");
+    //render layer state
+	current_layer = get_highest_layer(layer_state);
+	if(last_layer != current_layer || screen_init) {
+        // print("layer change\n");
+		last_layer = current_layer;
+		vertpos = 26 - heightF2/2;
+    	hortpos = 85 - widthL2/2;
+    	switch(current_layer) {
+    		default:
+                qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
+    			qp_drawtext(display, hortpos, vertpos, font2, "LAYER 1");
+    			break;
+    		case 1:
+    			qp_drawtext(display, hortpos, vertpos, font2, "LAYER 2");
+    			break;
+		}
+    	
+	}
+    //render dynamic letters
+    if(last_text != text || screen_init){
+        last_text = text;
+        // print("text change\n");
+    	vertpos = 160 - height/2;
+		hortpos = 114 - width/2;
+		qp_drawtext(display, hortpos, vertpos, font1, text);
+	}
+	//render gui togg state
+
+    gui_state = keymap_config.no_gui;
+	if(gui_last_state != gui_state || screen_init)
+    {
+        // print("gui change\n");
+        gui_last_state = gui_state;
+        if(gui_state)
+        {
+            qp_drawtext(display, 54, 300, font3, "DISABLED");
+        }
+        else {
+            qp_rect(display, 54, 300, 54 + qp_textwidth(font3, "DISABLED"), 300 + font3 -> line_height, 0, 0, 0, true);
+            qp_drawtext(display, 54, 300, font3, "ENABLED");
+        }
+    }
+    screen_init = false;
+}
+
+void housekeeping_task_user(void) {
+	
+    render_screen1();
+    
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 	switch(keycode) {
+        case KC_VOLU:
+            if (record->event.pressed) {
+                text = "V+";
+            }
+            break;
+        case KC_VOLD:
+            if (record->event.pressed) {
+                text = "V-";
+            }
+            break;
+        case KC_MNXT:
+            if (record->event.pressed) {
+                text = "M>";
+            }
+            break;
+        case KC_MPRV:
+            if (record->event.pressed) {
+                text = "M<";
+            }
+            break;
 		case KC_MUTE:
             if (record->event.pressed) {
                 text = "MTE";
@@ -306,11 +400,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 text = "END";
             }
             break;
-//        case KC_BSLS:
-//            if (record->event.pressed) {
-//                text = "\";
-//            }
-//            break;
+       case KC_BSLS:
+           if (record->event.pressed) {
+               text = "\\";
+           }
+           break;
         case KC_RBRC:
             if (record->event.pressed) {
                 text = "]";
@@ -366,11 +460,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 text = "SFT";
             }
             break;
-//        case KC_SLSH:
-//            if (record->event.pressed) {
-//                text = "/";
-//            }
-//            break;
+       case KC_SLSH:
+           if (record->event.pressed) {
+               text = "/";
+           }
+           break;
         case KC_DOT:
             if (record->event.pressed) {
                 text = ".";
