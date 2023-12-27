@@ -3,6 +3,7 @@
 
 #include "print.h"
 #include <qp.h>
+#include <color.h>
 #include QMK_KEYBOARD_H
 #include "font/unlearned42.qff.h"
 #include "font/minecraft20.qff.h"
@@ -14,7 +15,7 @@
 #include "images/scroll_lock_off.qgf.h"
 #include "images/scroll_lock_on.qgf.h"
 #include "images/gui_apple.qgf.h"
-#include "images/test.qgf.h"
+#include "images/anime_image.qgf.h"
 
 
 
@@ -29,9 +30,9 @@ static painter_image_handle_t num_off = NULL;
 static painter_image_handle_t scroll_on = NULL;
 static painter_image_handle_t scroll_off = NULL;
 static painter_image_handle_t gui_apple = NULL;
-static painter_image_handle_t test = NULL;
+static painter_image_handle_t image = NULL;
 static const char *text = "A";
-// static const char *last_text;
+static const char *last_text;
 int16_t width;
 uint8_t height;
 uint8_t heightF2;
@@ -42,14 +43,15 @@ int current_wpm = 0;
 int fonttype;
 led_t    led_state;
 static led_t    led_last_state; 
-// led_last_state.raw = 0;
 uint8_t last_layer = 0;
 uint8_t current_layer;
 bool gui_state;
 bool gui_last_state;
 bool screen_init;
+int screen = 0;
+bool screen2;
 
-// bool screen2;
+
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT_75_ansi(
@@ -116,13 +118,14 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     scroll_on = qp_load_image_mem(gfx_scroll_lock_on);
     scroll_off = qp_load_image_mem(gfx_scroll_lock_off);
     gui_apple = qp_load_image_mem(gfx_gui_apple);
-    test = qp_load_image_mem(gfx_test);
+    image = qp_load_image_mem(gfx_anime_image);
     qp_rect(display, 0, 0, 170, 320, 0, 0, 0, true);
     qp_flush(display);
     screen_init = true;
+    screen2 = true;
     width = qp_textwidth(font1, text);
 	height = font1 -> line_height;
-    qp_drawimage(display, 0, 0, test);
+
 	
     return 0;
 }
@@ -177,8 +180,13 @@ void render_led_status(void)
 void render_windows_logo(int x, int y)
 {
     
-
-    if(current_layer == 0 || current_layer == 1)
+    if((last_layer == 0 || last_layer == 1) && (current_layer == 2 || current_layer == 3))
+    {
+        qp_drawtext(display, 54, 273, font3, "COMMAND");
+        qp_rect(display, x, y, x+22+19, y+22+19, 0, 0, 0, true);
+        qp_drawimage(display, x, y, gui_apple);
+    }
+    if(((current_layer == 0 || current_layer == 1) && (last_layer == 2 || last_layer == 3)) || screen_init)
     {
         qp_rect(display, 54, 273, 172, 290, 0, 0, 0, true);
         qp_drawtext(display, 54, 273, font3, "WINKEY");
@@ -192,22 +200,24 @@ void render_windows_logo(int x, int y)
         //bottom right square
         qp_rect(display, x+22, y+22, x+22+19, y+22+19, 146, 255, 255, true);
     }
-    if(current_layer == 2 || current_layer == 3)
-    {
-        qp_drawtext(display, 54, 273, font3, "COMMAND");
-        qp_rect(display, x, y, x+22+19, y+22+19, 0, 0, 0, true);
-        qp_drawimage(display, x, y, gui_apple);
-    }
+    // if(current_layer == 2 || current_layer == 3)
+    // {
+    //     qp_drawtext(display, 54, 273, font3, "COMMAND");
+    //     qp_rect(display, x, y, x+22+19, y+22+19, 0, 0, 0, true);
+    //     qp_drawimage(display, x, y, gui_apple);
+    // }
     
 }
 
 void render_screen1(void) {
-    //render template
-    // if(screen_init) {
-    //     qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
-    //     qp_rect(display, 55, 55, 57, 266, 0, 0, 255, true);
-    //     qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
-    // }
+    // render template
+    if(screen_init) {
+        qp_rect(display, 0, 0, 170, 320, HSV_BLACK, true);
+        qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
+        qp_rect(display, 55, 55, 57, 266, 0, 0, 255, true);
+        qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
+        screen2 = true;
+    }
 	
 
 	render_led_status();
@@ -217,56 +227,76 @@ void render_screen1(void) {
         // print("layer change\n");
         render_windows_logo(6, 273);
 		last_layer = current_layer;
-		// vertpos = 26 - heightF2/2;
-    	// hortpos = 85 - widthL2/2;
-    	// switch(current_layer) {
-    	// 	case 0:
-        //         qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
-    	// 		qp_drawtext(display, hortpos, vertpos, font2, "WIN L-1");
-    	// 		break;
-    	// 	case 1:
-    	// 		qp_drawtext(display, hortpos, vertpos, font2, "WIN L-2");
-    	// 		break;
-        //     case 2:
-        //         qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
-        //         qp_drawtext(display, hortpos, vertpos, font2, "APPLE 1");
-    	// 		break;
-        //     case 3:
-        //         qp_drawtext(display, hortpos, vertpos, font2, "APPLE 2");
-    	// 		break;
-		// }
+		vertpos = 26 - heightF2/2;
+    	hortpos = 85 - widthL2/2;
+    	switch(current_layer) {
+    		case 0:
+                qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
+    			qp_drawtext(display, hortpos, vertpos, font2, "WIN L-1");
+    			break;
+    		case 1:
+    			qp_drawtext(display, hortpos, vertpos, font2, "WIN L-2");
+    			break;
+            case 2:
+                qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
+                qp_drawtext(display, hortpos, vertpos, font2, "APPLE 1");
+    			break;
+            case 3:
+                qp_drawtext(display, hortpos, vertpos, font2, "APPLE 2");
+    			break;
+		}
     	
 	}
     //render dynamic letters
-    // if(last_text != text || screen_init){
-    //     last_text = text;
-    //     // print("text change\n");
-    // 	vertpos = 160 - height/2;
-	// 	hortpos = 114 - width/2;
-	// 	qp_drawtext(display, hortpos, vertpos, font1, text);
-	// }
+    if(last_text != text || screen_init){
+        last_text = text;
+        // print("text change\n");
+    	vertpos = 160 - height/2;
+		hortpos = 114 - width/2;
+		qp_drawtext(display, hortpos, vertpos, font1, text);
+	}
 	//render gui togg state
 
     gui_state = keymap_config.no_gui;
-	// if(gui_last_state != gui_state || screen_init)
-    // {
-    //     // print("gui change\n");
-    //     gui_last_state = gui_state;
-    //     if(gui_state)
-    //     {
-    //         qp_drawtext(display, 54, 300, font3, "DISABLED");
-    //     }
-    //     else {
-    //         qp_rect(display, 54, 300, 54 + qp_textwidth(font3, "DISABLED"), 300 + font3 -> line_height, 0, 0, 0, true);
-    //         qp_drawtext(display, 54, 300, font3, "ENABLED");
-    //     }
-    // }
+	if(gui_last_state != gui_state || screen_init)
+    {
+        // print("gui change\n");
+        gui_last_state = gui_state;
+        if(gui_state)
+        {
+            qp_drawtext(display, 54, 300, font3, "DISABLED");
+        }
+        else {
+            qp_rect(display, 54, 300, 54 + qp_textwidth(font3, "DISABLED"), 300 + font3 -> line_height, 0, 0, 0, true);
+            qp_drawtext(display, 54, 300, font3, "ENABLED");
+        }
+    }
     screen_init = false;
+
+}
+
+void render_screen2(void) {
+    if(screen2) {
+        qp_rect(display, 0, 0, 170, 320, HSV_BLACK, true);
+        qp_drawimage(display, 0, 0, image);
+        screen2 = false;
+        screen_init = true;
+    }
 }
 
 void housekeeping_task_user(void) {
 	
-    // render_screen1();
+    switch(screen) {
+        case 0:
+
+        render_screen1();
+        break;
+        case 1:
+        render_screen2();
+        break;
+    }
+    
+    
     
 }
 
@@ -375,11 +405,20 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_F14:
             if (record->event.pressed) {
                 text = "F14";
+                
+                if(screen == 0)
+                {
+                    screen = 0;
+                }
+                else {
+                    screen = screen - 1;
+                }
             }
             break;
         case KC_F15:
             if (record->event.pressed) {
                 text = "F15";
+                screen = screen + 1 % 2;
             }
             break;
         case KC_F16:
@@ -731,7 +770,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         default:
         	break;
     }
-    if(qp_textwidth(font1, text) < width)
+    if(qp_textwidth(font1, text) < width && screen == 0)
     {
     	qp_rect(display, hortpos, vertpos, hortpos+width, vertpos+height, 0, 0, 0, true);
 	}

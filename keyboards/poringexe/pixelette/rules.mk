@@ -11,6 +11,6 @@ SRC =  techfont.qff.c \
 	   images/scroll_lock_off.qgf.c \
 	   images/scroll_lock_on.qgf.c \
 	   images/gui_apple.qgf.c \
-	   images/test.qgf.c
+	   images/anime_image.qgf.c
 ENCODER_MAP_ENABLE = yes
-CONSOLE_ENABLE = yes
+# CONSOLE_ENABLE = yes
