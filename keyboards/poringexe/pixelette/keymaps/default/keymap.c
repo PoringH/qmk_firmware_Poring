@@ -33,7 +33,7 @@ static painter_image_handle_t scroll_off = NULL;
 static painter_image_handle_t gui_apple = NULL;
 static painter_image_handle_t image = NULL;
 static char text[10] = {0};
-static const char *last_text;
+static char last_text[10] = {0};
 int16_t width;
 uint8_t height;
 uint8_t heightF2;
@@ -54,6 +54,11 @@ bool screen1;
 bool screen2;
 
 
+enum custom_keycodes {
+    SC_NEXT = SAFE_RANGE,
+    SC_PREV
+};
+
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT_75_ansi(
@@ -61,8 +66,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                           KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,          KC_HOME,
                           KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,          KC_END,
                           KC_CAPS, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,           KC_PGUP,
-        KC_F14,  KC_F15,  KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,          KC_RSFT, KC_UP,   KC_PGDN,
-        KC_F17,  KC_F16,  KC_LCTL, KC_LGUI, KC_LALT,                            KC_SPC,                             KC_RALT, MO(1),   KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT
+        SC_NEXT,SC_PREV,  KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,          KC_RSFT, KC_UP,   KC_PGDN,
+        KC_F14,  KC_F15,  KC_LCTL, KC_LGUI, KC_LALT,                            KC_SPC,                             KC_RALT, MO(1),   KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT
     ),
     [1] = LAYOUT_75_ansi(
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
@@ -77,8 +82,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                           KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,          KC_HOME,
                           KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,          KC_END,
                           KC_CAPS, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,           KC_PGUP,
-        KC_F14,  KC_F15,  KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,          KC_RSFT, KC_UP,   KC_PGDN,
-        KC_F17,  KC_F16,  KC_LCTL, KC_LALT, KC_LCMD,                            KC_SPC,                             KC_RCMD, MO(3),   KC_RALT, KC_LEFT, KC_DOWN, KC_RGHT
+        SC_NEXT,SC_PREV,  KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,          KC_RSFT, KC_UP,   KC_PGDN,
+        KC_F14,  KC_F15,  KC_LCTL, KC_LALT, KC_LCMD,                            KC_SPC,                             KC_RCMD, MO(3),   KC_RALT, KC_LEFT, KC_DOWN, KC_RGHT
     ),
     [3] = LAYOUT_75_ansi(
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
@@ -107,7 +112,6 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     qp_init(display, QP_ROTATION_0);
     qp_power(display, true);
     qp_set_viewport_offsets(display, 35, 0);
-	
     font1 = qp_load_font_mem(font_origami40);
     font2 = qp_load_font_mem(font_unlearned42);
     font3 = qp_load_font_mem(font_minecraft20);
@@ -128,7 +132,7 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     screen2 = true;
     width = qp_textwidth(font1, text);
 	height = font1 -> line_height;
-
+    
 	
     return 0;
 }
@@ -251,8 +255,8 @@ void render_screen1(void) {
     	
 	}
     //render dynamic letters
-    if(last_text != text || screen_init || screen1){
-        last_text = text;
+    if(strcmp(text, last_text) != 0 || screen_init || screen1){
+        strcpy(last_text, text);
         // print("text change\n");
     	vertpos = 160 - height/2;
 		hortpos = 114 - width/2;
@@ -304,9 +308,18 @@ void housekeeping_task_user(void) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    memset(text, 0, sizeof(text));
 	if(record->event.pressed){
+        memset(text, 0, sizeof(text));
         switch(keycode) {
+            case SC_NEXT:
+                screen = (screen + 1) % 2;
+                break;
+            case SC_PREV:
+                screen = screen - 1;
+                if(screen < 0) {
+                    screen = (screen * -1) % 2;
+                }
+                break;
             case KC_VOLU:
                 strcpy(text, "V+");
                 break;
@@ -325,21 +338,129 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case KC_MPLY:
                 strcpy(text, "PLY");
                 break;
+            case KC_ESC:
+                strcpy(text, "ESC");
+                break;
+            case KC_GRV:
+                strcpy(text, "~");
+                break;
+            case KC_ENT:
+                strcpy(text, "ENT");
+                break;
+            case KC_LSFT:
+                strcpy(text, "SFT");
+                break;
+            case KC_RSFT:
+                strcpy(text, "SFT");
+                break;
+            case KC_CAPS:
+                strcpy(text, "CAP");
+                break;
+            case KC_TAB:
+                strcpy(text, "TAB");
+                break;
+            case KC_DEL:
+                strcpy(text, "DEL");
+                break;
+            case KC_HOME:
+                strcpy(text, "HOM");
+                break;
+            case KC_BSPC:
+                strcpy(text, "BSP");
+                break;
+            case KC_EQL:
+                strcpy(text, "=");
+                break;
+            case KC_MINS:
+                strcpy(text, "-");
+                break;
+            case KC_RBRC:
+                strcpy(text, "[");
+                break;
+            case KC_LBRC:
+                strcpy(text, "]");
+                break;
+            case KC_BSLS:
+                strcpy(text, "\\");
+                break;
+            case KC_END:
+                strcpy(text, "END");
+                break;
+            case KC_PGUP:
+                strcpy(text, "PUP");
+                break;
+            case KC_QUOT:
+                strcpy(text, "'");
+                break;
+            case KC_SCLN:
+                strcpy(text, ";");
+                break;
+            case KC_COMM:
+                strcpy(text, ",");
+                break;
+            case KC_DOT:
+                strcpy(text, ".");
+                break;
+            case KC_SLSH:
+                strcpy(text, "/");
+                break;
+            case KC_PGDN:
+                strcpy(text, "PDN");
+                break;
+            case KC_UP:
+                strcpy(text, "UP");
+                break;
+            case KC_RGHT:
+                strcpy(text, "RGT");
+                break;
+            case KC_DOWN:
+                strcpy(text, "DN");
+                break;
+            case KC_LEFT:
+                strcpy(text, "LFT");
+                break;
+            case KC_RCTL:
+                strcpy(text, "CTL");
+                break;
+            case KC_RALT:
+                strcpy(text, "ALT");
+                break;
+            case KC_SPC:
+                strcpy(text, "SPC");
+                break;
+            case KC_LALT:
+                strcpy(text, "ALT");
+                break;
+            case KC_LGUI:
+                strcpy(text, "GUI");
+                break;
+            case KC_LCTL:
+                strcpy(text, "CTL");
+                break;
             case KC_F1 ... KC_F9:
                 text[0] = 'F';
                 text[1] = '1' + keycode - KC_F1;
                 break;
-            case KC_F10 ... KC_F19:
+            case KC_F10 ... KC_F12:
                 text[0] = 'F';
                 text[1] = '1';
                 // or strcpy(text, "F1");
                 text[2] = '0' + keycode - KC_F10;
                 break;
+            case KC_F13 ... KC_F19:
+                text[0] = 'F';
+                text[1] = '1';
+                // or strcpy(text, "F1");
+                text[2] = '3' + keycode - KC_F13;
+                break;
             case KC_A ... KC_Z:
                 text[0] = 'A' + keycode - KC_A;
                 break;
-            case KC_1 ... KC_0:
+            case KC_1 ... KC_9:
                 text[0] = '1' + keycode - KC_1;
+                break;
+            case KC_0:
+                text[0] = '0';
                 break;
         }
         
