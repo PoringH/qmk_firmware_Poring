@@ -49,6 +49,7 @@ bool gui_state;
 bool gui_last_state;
 bool screen_init;
 int screen = 0;
+bool screen1;
 bool screen2;
 
 
@@ -122,6 +123,7 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     qp_rect(display, 0, 0, 170, 320, 0, 0, 0, true);
     qp_flush(display);
     screen_init = true;
+    screen1 = true;
     screen2 = true;
     width = qp_textwidth(font1, text);
 	height = font1 -> line_height;
@@ -144,7 +146,7 @@ void render_led_status(void)
     // int status_width = 42;
     // int status_height = 54;
 	led_state = host_keyboard_led_state();
-	if(led_last_state.raw != led_state.raw || screen_init) {
+	if(led_last_state.raw != led_state.raw || screen_init || screen1) {
 		led_last_state.raw = led_state.raw;
 		// print("led state change\n");
         if (led_state.caps_lock == true){
@@ -180,13 +182,13 @@ void render_led_status(void)
 void render_windows_logo(int x, int y)
 {
     
-    if((last_layer == 0 || last_layer == 1) && (current_layer == 2 || current_layer == 3))
+    if(((last_layer == 0 || last_layer == 1) && (current_layer == 2 || current_layer == 3)) || ((current_layer == 2 || current_layer == 3) && screen1))
     {
         qp_drawtext(display, 54, 273, font3, "COMMAND");
         qp_rect(display, x, y, x+22+19, y+22+19, 0, 0, 0, true);
         qp_drawimage(display, x, y, gui_apple);
     }
-    if(((current_layer == 0 || current_layer == 1) && (last_layer == 2 || last_layer == 3)) || screen_init)
+    if(((current_layer == 0 || current_layer == 1) && (last_layer == 2 || last_layer == 3)) || ((current_layer == 0 || current_layer == 1) && screen1) || screen_init)
     {
         qp_rect(display, 54, 273, 172, 290, 0, 0, 0, true);
         qp_drawtext(display, 54, 273, font3, "WINKEY");
@@ -211,7 +213,7 @@ void render_windows_logo(int x, int y)
 
 void render_screen1(void) {
     // render template
-    if(screen_init) {
+    if(screen_init || screen1) {
         qp_rect(display, 0, 0, 170, 320, HSV_BLACK, true);
         qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
         qp_rect(display, 55, 55, 57, 266, 0, 0, 255, true);
@@ -223,7 +225,7 @@ void render_screen1(void) {
 	render_led_status();
     //render layer state
 	current_layer = get_highest_layer(layer_state);
-	if(last_layer != current_layer || screen_init) {
+	if(last_layer != current_layer || screen_init || screen1) {
         // print("layer change\n");
         render_windows_logo(6, 273);
 		last_layer = current_layer;
@@ -248,7 +250,7 @@ void render_screen1(void) {
     	
 	}
     //render dynamic letters
-    if(last_text != text || screen_init){
+    if(last_text != text || screen_init || screen1){
         last_text = text;
         // print("text change\n");
     	vertpos = 160 - height/2;
@@ -258,7 +260,7 @@ void render_screen1(void) {
 	//render gui togg state
 
     gui_state = keymap_config.no_gui;
-	if(gui_last_state != gui_state || screen_init)
+	if(gui_last_state != gui_state || screen_init || screen1)
     {
         // print("gui change\n");
         gui_last_state = gui_state;
@@ -272,6 +274,7 @@ void render_screen1(void) {
         }
     }
     screen_init = false;
+    screen1 = false;
 
 }
 
@@ -280,7 +283,7 @@ void render_screen2(void) {
         qp_rect(display, 0, 0, 170, 320, HSV_BLACK, true);
         qp_drawimage(display, 0, 0, image);
         screen2 = false;
-        screen_init = true;
+        screen1 = true;
     }
 }
 
@@ -288,7 +291,6 @@ void housekeeping_task_user(void) {
 	
     switch(screen) {
         case 0:
-
         render_screen1();
         break;
         case 1:
