@@ -7,14 +7,31 @@
 #include "font/unlearned42.qff.h"
 #include "font/minecraft20.qff.h"
 #include "font/origami40.qff.h"
+#include "images/caps_lock_off.qgf.h"
+#include "images/caps_lock_on.qgf.h"
+#include "images/num_lock_off.qgf.h"
+#include "images/num_lock_on.qgf.h"
+#include "images/scroll_lock_off.qgf.h"
+#include "images/scroll_lock_on.qgf.h"
+#include "images/gui_apple.qgf.h"
+#include "images/test.qgf.h"
+
 
 
 static painter_device_t display;
 static painter_font_handle_t font1 = NULL;
 static painter_font_handle_t font2 = NULL;
 static painter_font_handle_t font3 = NULL;
+static painter_image_handle_t caps_on = NULL;
+static painter_image_handle_t caps_off = NULL;
+static painter_image_handle_t num_on = NULL;
+static painter_image_handle_t num_off = NULL;
+static painter_image_handle_t scroll_on = NULL;
+static painter_image_handle_t scroll_off = NULL;
+static painter_image_handle_t gui_apple = NULL;
+static painter_image_handle_t test = NULL;
 static const char *text = "A";
-static const char *last_text;
+// static const char *last_text;
 int16_t width;
 uint8_t height;
 uint8_t heightF2;
@@ -31,6 +48,7 @@ uint8_t current_layer;
 bool gui_state;
 bool gui_last_state;
 bool screen_init;
+
 // bool screen2;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -47,8 +65,24 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
                           KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,          KC_TRNS,
-        KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS,
-        KC_TRNS, NK_TOGG, KC_TRNS, GU_TOGG, KC_TRNS,                            KC_TRNS,                             KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
+        TG(2),   KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS,
+        KC_TRNS, NK_TOGG, KC_TRNS, GU_TOGG, KC_TRNS,                            KC_TRNS,                            KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
+    ),
+    [2] = LAYOUT_75_ansi(
+        KC_MUTE, KC_MPLY, KC_ESC,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,  KC_F13,           KC_DEL,
+                          KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,          KC_HOME,
+                          KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,          KC_END,
+                          KC_CAPS, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,           KC_PGUP,
+        KC_F14,  KC_F15,  KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,          KC_RSFT, KC_UP,   KC_PGDN,
+        QK_BOOT, KC_F16,  KC_LCTL, KC_LALT, KC_LCMD,                            KC_SPC,                             KC_RCMD, MO(3),   KC_RALT, KC_LEFT, KC_DOWN, KC_RGHT
+    ),
+    [3] = LAYOUT_75_ansi(
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
+                          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
+                          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,
+                          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS,          KC_TRNS,
+        TG(2),   KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS,
+        KC_TRNS, NK_TOGG, KC_TRNS, KC_TRNS, GU_TOGG,                            KC_TRNS,                            KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
     )
 };
 
@@ -56,7 +90,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [0] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)},
-    [1] = {ENCODER_CCW_CW(KC_TRNS, KC_TRNS), ENCODER_CCW_CW(KC_TRNS, KC_TRNS)}
+    [1] = {ENCODER_CCW_CW(KC_TRNS, KC_TRNS), ENCODER_CCW_CW(KC_TRNS, KC_TRNS)},
+    [2] = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(KC_MPRV, KC_MNXT)},
+    [3] = {ENCODER_CCW_CW(KC_TRNS, KC_TRNS), ENCODER_CCW_CW(KC_TRNS, KC_TRNS)}
 };
 
 #endif
@@ -73,11 +109,20 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     font3 = qp_load_font_mem(font_minecraft20);
     heightF2 = font2 -> line_height;
     widthL2 = qp_textwidth(font2, "LAYER 2");
+    caps_on = qp_load_image_mem(gfx_caps_lock_on);
+    caps_off = qp_load_image_mem(gfx_caps_lock_off);
+    num_on = qp_load_image_mem(gfx_num_lock_on);
+    num_off = qp_load_image_mem(gfx_num_lock_off);
+    scroll_on = qp_load_image_mem(gfx_scroll_lock_on);
+    scroll_off = qp_load_image_mem(gfx_scroll_lock_off);
+    gui_apple = qp_load_image_mem(gfx_gui_apple);
+    test = qp_load_image_mem(gfx_test);
     qp_rect(display, 0, 0, 170, 320, 0, 0, 0, true);
     qp_flush(display);
     screen_init = true;
     width = qp_textwidth(font1, text);
 	height = font1 -> line_height;
+    qp_drawimage(display, 0, 0, test);
 	
     return 0;
 }
@@ -93,29 +138,35 @@ void render_led_status(void)
     int cap_y = 65;
     int num_y = 134;
     int scroll_y = 202;
-    int status_width = 42;
-    int status_height = 54;
+    // int status_width = 42;
+    // int status_height = 54;
 	led_state = host_keyboard_led_state();
 	if(led_last_state.raw != led_state.raw || screen_init) {
 		led_last_state.raw = led_state.raw;
 		// print("led state change\n");
         if (led_state.caps_lock == true){
-            qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 130, 255, 255, true);
+            // qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 130, 255, 255, true);
+            qp_drawimage(display, usb_statex, cap_y, caps_on);
         }
         else{			
-            qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 0, 255, 255, true);
+            // qp_rect(display, usb_statex, cap_y, usb_statex + status_width, cap_y + status_height, 0, 255, 255, true);
+            qp_drawimage(display, usb_statex, cap_y, caps_off);
         }
         if (led_state.num_lock == true){
-            qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 130, 255, 255, true);
+            // qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 130, 255, 255, true);
+            qp_drawimage(display, usb_statex, num_y, num_on);
         }
         else{
-            qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 0, 255, 255, true);
+            // qp_rect(display, usb_statex, num_y, usb_statex + status_width, num_y + status_height, 0, 255, 255, true);
+            qp_drawimage(display, usb_statex, num_y, num_off);
         }
         if (led_state.scroll_lock == true){
-            qp_rect(display, usb_statex, scroll_y, usb_statex + status_width, scroll_y + status_height, 130, 255, 255, true);
+            // qp_rect(display, usb_statex, scroll_y, usb_statex + status_width, scroll_y + status_height, 130, 255, 255, true);
+            qp_drawimage(display, usb_statex, scroll_y, scroll_on);
         }
         else{
-            qp_rect(display, usb_statex, scroll_y, usb_statex + status_width , scroll_y + status_height , 0, 255, 255, true);
+            // qp_rect(display, usb_statex, scroll_y, usb_statex + status_width , scroll_y + status_height , 0, 255, 255, true);
+            qp_drawimage(display, usb_statex, scroll_y, scroll_off);
 	}
 		
 	}
@@ -125,25 +176,38 @@ void render_led_status(void)
 
 void render_windows_logo(int x, int y)
 {
-    //square top left
-    qp_rect(display, x, y, x+19, y+19, 0, 0, 255, true);
-    //top right square
-    qp_rect(display, x+22, y, x+41, y+19, 0, 0, 255, true);
-    //bottom left square
-    qp_rect(display, x, y+22, x+19, y+41, 0, 0, 255, true);
-    //bottom right square
-    qp_rect(display, x+22, y+22, x+41, y+41, 0, 0, 255, true);
+    
+
+    if(current_layer == 0 || current_layer == 1)
+    {
+        qp_rect(display, 54, 273, 172, 290, 0, 0, 0, true);
+        qp_drawtext(display, 54, 273, font3, "WINKEY");
+        qp_rect(display, x, y, x+22+19, y+22+19, 0, 0, 0, true);
+        //square top left
+        qp_rect(display, x, y, x+19, y+19, 146, 255, 255, true);
+        //top right square
+        qp_rect(display, x+22, y, x+22+19, y+19, 146, 255, 255, true);
+        //bottom left square
+        qp_rect(display, x, y+22, x+19, y+22+19, 146, 255, 255, true);
+        //bottom right square
+        qp_rect(display, x+22, y+22, x+22+19, y+22+19, 146, 255, 255, true);
+    }
+    if(current_layer == 2 || current_layer == 3)
+    {
+        qp_drawtext(display, 54, 273, font3, "COMMAND");
+        qp_rect(display, x, y, x+22+19, y+22+19, 0, 0, 0, true);
+        qp_drawimage(display, x, y, gui_apple);
+    }
+    
 }
 
 void render_screen1(void) {
     //render template
-    if(screen_init) {
-        qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
-        qp_rect(display, 55, 55, 57, 266, 0, 0, 255, true);
-        qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
-        render_windows_logo(6, 273);
-        qp_drawtext(display, 54, 273, font3, "WINKEY");
-    }
+    // if(screen_init) {
+    //     qp_rect(display, 0, 53, 170, 55, 0, 0, 255, true);
+    //     qp_rect(display, 55, 55, 57, 266, 0, 0, 255, true);
+    //     qp_rect(display, 0, 266, 170, 268, 0, 0, 255, true);
+    // }
 	
 
 	render_led_status();
@@ -151,50 +215,58 @@ void render_screen1(void) {
 	current_layer = get_highest_layer(layer_state);
 	if(last_layer != current_layer || screen_init) {
         // print("layer change\n");
+        render_windows_logo(6, 273);
 		last_layer = current_layer;
-		vertpos = 26 - heightF2/2;
-    	hortpos = 85 - widthL2/2;
-    	switch(current_layer) {
-    		default:
-                qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
-    			qp_drawtext(display, hortpos, vertpos, font2, "LAYER 1");
-    			break;
-    		case 1:
-    			qp_drawtext(display, hortpos, vertpos, font2, "LAYER 2");
-    			break;
-		}
+		// vertpos = 26 - heightF2/2;
+    	// hortpos = 85 - widthL2/2;
+    	// switch(current_layer) {
+    	// 	case 0:
+        //         qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
+    	// 		qp_drawtext(display, hortpos, vertpos, font2, "WIN L-1");
+    	// 		break;
+    	// 	case 1:
+    	// 		qp_drawtext(display, hortpos, vertpos, font2, "WIN L-2");
+    	// 		break;
+        //     case 2:
+        //         qp_rect(display, 0, 0, 170, 52, 0, 0, 0, true);
+        //         qp_drawtext(display, hortpos, vertpos, font2, "APPLE 1");
+    	// 		break;
+        //     case 3:
+        //         qp_drawtext(display, hortpos, vertpos, font2, "APPLE 2");
+    	// 		break;
+		// }
     	
 	}
     //render dynamic letters
-    if(last_text != text || screen_init){
-        last_text = text;
-        // print("text change\n");
-    	vertpos = 160 - height/2;
-		hortpos = 114 - width/2;
-		qp_drawtext(display, hortpos, vertpos, font1, text);
-	}
+    // if(last_text != text || screen_init){
+    //     last_text = text;
+    //     // print("text change\n");
+    // 	vertpos = 160 - height/2;
+	// 	hortpos = 114 - width/2;
+	// 	qp_drawtext(display, hortpos, vertpos, font1, text);
+	// }
 	//render gui togg state
 
     gui_state = keymap_config.no_gui;
-	if(gui_last_state != gui_state || screen_init)
-    {
-        // print("gui change\n");
-        gui_last_state = gui_state;
-        if(gui_state)
-        {
-            qp_drawtext(display, 54, 300, font3, "DISABLED");
-        }
-        else {
-            qp_rect(display, 54, 300, 54 + qp_textwidth(font3, "DISABLED"), 300 + font3 -> line_height, 0, 0, 0, true);
-            qp_drawtext(display, 54, 300, font3, "ENABLED");
-        }
-    }
+	// if(gui_last_state != gui_state || screen_init)
+    // {
+    //     // print("gui change\n");
+    //     gui_last_state = gui_state;
+    //     if(gui_state)
+    //     {
+    //         qp_drawtext(display, 54, 300, font3, "DISABLED");
+    //     }
+    //     else {
+    //         qp_rect(display, 54, 300, 54 + qp_textwidth(font3, "DISABLED"), 300 + font3 -> line_height, 0, 0, 0, true);
+    //         qp_drawtext(display, 54, 300, font3, "ENABLED");
+    //     }
+    // }
     screen_init = false;
 }
 
 void housekeeping_task_user(void) {
 	
-    render_screen1();
+    // render_screen1();
     
 }
 
