@@ -407,20 +407,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_F14:
             if (record->event.pressed) {
                 text = "F14";
-                
-                if(screen == 0)
+                screen = screen - 1;
+                if(screen < 0)
                 {
-                    screen = 0;
-                }
-                else {
-                    screen = screen - 1;
+                    screen = (screen * -1) % 2;
                 }
             }
             break;
         case KC_F15:
             if (record->event.pressed) {
                 text = "F15";
-                screen = screen + 1 % 2;
+                screen = (screen + 1) % 2;
             }
             break;
         case KC_F16:
