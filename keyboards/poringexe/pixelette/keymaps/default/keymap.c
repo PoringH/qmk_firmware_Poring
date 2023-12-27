@@ -4,6 +4,7 @@
 #include "print.h"
 #include <qp.h>
 #include <color.h>
+#include <string.h>
 #include QMK_KEYBOARD_H
 #include "font/unlearned42.qff.h"
 #include "font/minecraft20.qff.h"
@@ -31,7 +32,7 @@ static painter_image_handle_t scroll_on = NULL;
 static painter_image_handle_t scroll_off = NULL;
 static painter_image_handle_t gui_apple = NULL;
 static painter_image_handle_t image = NULL;
-static const char *text = "A";
+static char text[10] = {0};
 static const char *last_text;
 int16_t width;
 uint8_t height;
@@ -303,471 +304,45 @@ void housekeeping_task_user(void) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-	switch(keycode) {
-        case KC_VOLU:
-            if (record->event.pressed) {
-                text = "V+";
-            }
-            break;
-        case KC_VOLD:
-            if (record->event.pressed) {
-                text = "V-";
-            }
-            break;
-        case KC_MNXT:
-            if (record->event.pressed) {
-                text = "M>";
-            }
-            break;
-        case KC_MPRV:
-            if (record->event.pressed) {
-                text = "M<";
-            }
-            break;
-		case KC_MUTE:
-            if (record->event.pressed) {
-                text = "MTE";
-            }
-            break;
-        case KC_MPLY:
-            if (record->event.pressed) {
-                text = "PLY";
-            }
-            break;
-        case KC_ESC:
-            if (record->event.pressed) {
-                text = "ESC";
-            }
-            break;
-        case KC_F1:
-            if (record->event.pressed) {
-                text = "F1";
-            }
-            break;
-        case KC_F2:
-            if (record->event.pressed) {
-                text = "F2";
-            }
-            break;
-        case KC_F3:
-            if (record->event.pressed) {
-                text = "F3";
-            }
-            break;
-        case KC_F4:
-            if (record->event.pressed) {
-                text = "F4";
-            }
-            break;
-        case KC_F5:
-            if (record->event.pressed) {
-                text = "F5";
-            }
-            break;
-        case KC_F6:
-            if (record->event.pressed) {
-                text = "F6";
-            }
-            break;
-        case KC_F7:
-            if (record->event.pressed) {
-                text = "F7";
-            }
-            break;
-        case KC_F8:
-            if (record->event.pressed) {
-                text = "F8";
-            }
-            break;
-        case KC_F9:
-            if (record->event.pressed) {
-                text = "F9";
-            }
-            break;
-        case KC_F10:
-            if (record->event.pressed) {
-                text = "F10";
-            }
-            break;
-        case KC_F11:
-            if (record->event.pressed) {
-                text = "F11";
-            }
-            break;
-        case KC_F12:
-            if (record->event.pressed) {
-                text = "F12";
-            }
-            break;
-        case KC_F13:
-            if (record->event.pressed) {
-                text = "F13";
-            }
-            break;
-        case KC_F14:
-            if (record->event.pressed) {
-                text = "F14";
-                screen = screen - 1;
-                if(screen < 0)
-                {
-                    screen = (screen * -1) % 2;
-                }
-            }
-            break;
-        case KC_F15:
-            if (record->event.pressed) {
-                text = "F15";
-                screen = (screen + 1) % 2;
-            }
-            break;
-        case KC_F16:
-            if (record->event.pressed) {
-                text = "F16";
-            }
-            break;
-        case KC_DEL:
-            if (record->event.pressed) {
-                text = "DEL";
-            }
-            break;
-        case KC_GRV:
-            if (record->event.pressed) {
-                text = "~";
-            }
-            break;
-        case KC_1:
-            if (record->event.pressed) {
-                text = "1";
-            }
-            break;
-        case KC_2:
-            if (record->event.pressed) {
-                text = "2";
-            }
-            break;
-        case KC_3:
-            if (record->event.pressed) {
-                text = "3";
-            }
-            break;
-        case KC_4:
-            if (record->event.pressed) {
-                text = "4";
-            }
-            break;
-        case KC_5:
-            if (record->event.pressed) {
-                text = "5";
-            }
-            break;
-        case KC_6:
-            if (record->event.pressed) {
-                text = "6";
-            }
-            break;
-        case KC_7:
-            if (record->event.pressed) {
-                text = "7";
-            }
-            break;
-        case KC_8:
-            if (record->event.pressed) {
-                text = "8";
-            }
-            break;
-        case KC_9:
-            if (record->event.pressed) {
-                text = "9";
-            }
-            break;
-        case KC_0:
-            if (record->event.pressed) {
-                text = "0";
-            }
-            break;
-        case KC_MINS:
-            if (record->event.pressed) {
-                text = "-";
-            }
-            break;
-        case KC_EQL:
-            if (record->event.pressed) {
-                text = "=";
-            }
-            break;
-        case KC_BSPC:
-            if (record->event.pressed) {
-                text = "BPC";
-            }
-            break;
-        case KC_HOME:
-            if (record->event.pressed) {
-                text = "HOM";
-            }
-            break;
-        case KC_END:
-            if (record->event.pressed) {
-                text = "END";
-            }
-            break;
-       case KC_BSLS:
-           if (record->event.pressed) {
-               text = "\\";
-           }
-           break;
-        case KC_RBRC:
-            if (record->event.pressed) {
-                text = "]";
-            }
-            break;
-        case KC_LBRC:
-            if (record->event.pressed) {
-                text = "[";
-            }
-            break;
-        case KC_TAB:
-            if (record->event.pressed) {
-                text = "TAB";
-            }
-            break;
-        case KC_CAPS:
-            if (record->event.pressed) {
-                text = "CAP";
-            }
-            break;
-        case KC_SCLN:
-            if (record->event.pressed) {
-                text = ";";
-            }
-            break;
-        case KC_QUOT:
-            if (record->event.pressed) {
-                text = "'";
-            }
-            break;
-        case KC_ENT:
-            if (record->event.pressed) {
-                text = "ENT";
-            }
-            break;
-        case KC_PGUP:
-            if (record->event.pressed) {
-                text = "PUP";
-            }
-            break;
-        case KC_PGDN:
-            if (record->event.pressed) {
-                text = "PDN";
-            }
-            break;
-        case KC_UP:
-            if (record->event.pressed) {
-                text = "UP";
-            }
-            break;
-        case KC_RSFT:
-            if (record->event.pressed) {
-                text = "SFT";
-            }
-            break;
-       case KC_SLSH:
-           if (record->event.pressed) {
-               text = "/";
-           }
-           break;
-        case KC_DOT:
-            if (record->event.pressed) {
-                text = ".";
-            }
-            break;
-        case KC_COMM:
-            if (record->event.pressed) {
-                text = ",";
-            }
-            break;
-        case KC_LSFT:
-        	if (record->event.pressed) {
-                text = "SFT";
-            }
-            break;
-        case KC_LCTL:
-            if (record->event.pressed) {
-                text = "CTL";
-            }
-            break;
-        case KC_LGUI:
-            if (record->event.pressed) {
-                text = "GUI";
-            }
-            break;
-        case KC_LALT:
-            if (record->event.pressed) {
-                text = "ALT";
-            }
-            break;
-        case KC_SPC:
-            if (record->event.pressed) {
-                text = "SPC";
-            }
-            break;
-        case KC_RALT:
-            if (record->event.pressed) {
-                text = "]";
-            }
-            break;
-    	case KC_RCTL:
-            if (record->event.pressed) {
-                text = "CLT";
-            }
-            break;
-        case KC_LEFT:
-            if (record->event.pressed) {
-                text = "LFT";
-            }
-            break;
-        case KC_DOWN:
-            if (record->event.pressed) {
-                text = "DWN";
-            }
-            break;
-        case KC_RGHT:
-            if (record->event.pressed) {
-                text = "RGT";
-            }
-            break;
-        case KC_A:
-            if (record->event.pressed) {
-                text = "A";
-            }
-            break;
-        case KC_B:
-            if (record->event.pressed) {
-                text = "B";
-            }
-            break;
-        case KC_C:
-            if (record->event.pressed) {
-                text = "C";
-            }
-            break;
-        case KC_D:
-            if (record->event.pressed) {
-                text = "D";
-            }
-            break;
-        case KC_E:
-            if (record->event.pressed) {
-                text = "E";
-            }
-            break;
-        case KC_F:
-            if (record->event.pressed) {
-                text = "F";
-            }
-            break;
-        case KC_G:
-            if (record->event.pressed) {
-                text = "G";
-            }
-            break;
-        case KC_H:
-            if (record->event.pressed) {
-                text = "H";
-            }
-            break;
-        case KC_I:
-            if (record->event.pressed) {
-//				qp_clear(display);
-                text = "I";
-            }
-            break;
-        case KC_J:
-            if (record->event.pressed) {
-                text = "J";
-            }
-            break;
-        case KC_K:
-            if (record->event.pressed) {
-                text = "K";
-            }
-            break;
-        case KC_L:
-            if (record->event.pressed) {
-                text = "L";
-            }
-            break;
-        case KC_M:
-            if (record->event.pressed) {
-                text = "M";
-            }
-            break;
-        case KC_N:
-            if (record->event.pressed) {
-                text = "N";
-            }
-            break;
-        case KC_O:
-            if (record->event.pressed) {
-                text = "O";
-            }
-            break;
-        case KC_P:
-            if (record->event.pressed) {
-                text = "P";
-            }
-            break;
-        case KC_Q:
-            if (record->event.pressed) {
-                text = "Q";
-            }
-            break;
-        case KC_R:
-            if (record->event.pressed) {
-                text = "R";
-            }
-            break;
-        case KC_S:
-            if (record->event.pressed) {
-                text = "S";
-            }
-            break;
-        case KC_T:
-            if (record->event.pressed) {
-                text = "T";
-            }
-            break;
-        case KC_U:
-            if (record->event.pressed) {
-                text = "U";
-            }
-            break;
-        case KC_V:
-            if (record->event.pressed) {
-                text = "V";
-            }
-            break;
-        case KC_W:
-            if (record->event.pressed) {
-                text = "W";
-            }
-            break;
-        case KC_X:
-            if (record->event.pressed) {
-                text = "X";
-            }
-            break;
-        case KC_Y:
-            if (record->event.pressed) {
-                text = "Y";
-            }
-            break;
-        case KC_Z:
-            if (record->event.pressed) {
-                text = "Z";
-            }
-            break;
-        default:
-        	break;
+    memset(text, 0, sizeof(text));
+	if(record->event.pressed){
+        switch(keycode) {
+            case KC_VOLU:
+                strcpy(text, "V+");
+                break;
+            case KC_VOLD:
+                strcpy(text, "V-");
+                break;
+            case KC_MNXT:
+                strcpy(text, "M+");
+                break;
+            case KC_MPRV:
+                strcpy(text, "M-");
+                break;
+            case KC_MUTE:
+                strcpy(text, "MTE");
+                break;
+            case KC_MPLY:
+                strcpy(text, "PLY");
+                break;
+            case KC_F1 ... KC_F9:
+                text[0] = 'F';
+                text[1] = '1' + keycode - KC_F1;
+                break;
+            case KC_F10 ... KC_F19:
+                text[0] = 'F';
+                text[1] = '1';
+                // or strcpy(text, "F1");
+                text[2] = '0' + keycode - KC_F10;
+                break;
+            case KC_A ... KC_Z:
+                text[0] = 'A' + keycode - KC_A;
+                break;
+            case KC_1 ... KC_0:
+                text[0] = '1' + keycode - KC_1;
+                break;
+        }
+        
     }
     if(qp_textwidth(font1, text) < width && screen == 0)
     {
