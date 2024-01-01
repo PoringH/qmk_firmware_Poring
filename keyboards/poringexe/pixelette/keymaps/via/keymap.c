@@ -16,7 +16,7 @@
 #include "images/scroll_lock_off.qgf.h"
 #include "images/scroll_lock_on.qgf.h"
 #include "images/gui_apple.qgf.h"
-#include "images/anime_image.qgf.h"
+#include "images/adri.qgf.h"
 
 
 
@@ -124,7 +124,7 @@ uint32_t deffered_init(uint32_t trigger_time, void *cb_arg) {
     scroll_on = qp_load_image_mem(gfx_scroll_lock_on);
     scroll_off = qp_load_image_mem(gfx_scroll_lock_off);
     gui_apple = qp_load_image_mem(gfx_gui_apple);
-    image = qp_load_image_mem(gfx_anime_image);
+    image = qp_load_image_mem(gfx_adri);
     qp_rect(display, 0, 0, 170, 320, 0, 0, 0, true);
     qp_flush(display);
     screen_init = true;
